@@ -2,9 +2,11 @@ import { GoogleGenAI } from '@google/genai'
 import { SYSTEM_INSTRUCTION, AI_RESPONSE_SCHEMA, USER_PROMPT } from './prompts'
 
 // gemini-2.5-flash is restricted for some API key tiers ("no longer available to new
-// users") despite appearing in the models list — pinned to a stable model without that
-// restriction instead.
-export const GEMINI_MODEL = 'gemini-2.0-flash-001'
+// users") despite appearing in the models list. gemini-2.0-flash-001 hit a separate
+// account-level quota=0 block. Confirmed directly callable with real quota on the
+// current key — pin the concrete version, not the "-latest" alias, so behavior/audit
+// trail stay stable if the alias is repointed later.
+export const GEMINI_MODEL = 'gemini-3.5-flash'
 
 let client: GoogleGenAI | null = null
 
@@ -52,5 +54,7 @@ export async function callGeminiVisualInvestigation(
     throw new Error('Gemini returned an empty response.')
   }
 
-  return { text, modelVersion: GEMINI_MODEL }
+  // Prefer the model version Gemini actually reports over the requested constant —
+  // more accurate for the audit trail if the requested name is ever a floating alias.
+  return { text, modelVersion: response.modelVersion ?? GEMINI_MODEL }
 }

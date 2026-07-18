@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import AuthScreen from '@/components/AuthScreen'
+import { AnimatePresence, motion } from 'framer-motion'
+import LandingPage from '@/components/landing/LandingPage'
 import Sidebar from '@/components/Sidebar'
 import TopHeader from '@/components/TopHeader'
 import KernelTerminal from '@/components/KernelTerminal'
@@ -16,16 +17,12 @@ import ViewSettings from '@/components/ViewSettings'
 import { InvestigationProvider } from '@/lib/store/investigation-context'
 import { useInvestigation } from '@/lib/store/use-investigation'
 
-type CurrentView = 'auth' | 'intake' | 'idle' | 'analysis' | 'explorer' | 'report' | 'archive' | 'status' | 'settings'
+type CurrentView = 'intake' | 'idle' | 'analysis' | 'explorer' | 'report' | 'archive' | 'status' | 'settings'
 
 function Workspace() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [showLanding, setShowLanding] = useState(true)
   const [currentView, setCurrentView] = useState<CurrentView>('intake')
   const { activeInvestigationId, setActiveInvestigationId } = useInvestigation()
-
-  if (!isLoggedIn) {
-    return <AuthScreen onLogin={() => setIsLoggedIn(true)} />
-  }
 
   const openInvestigation = (phase: 'analysis' | 'report', investigationId: string) => {
     setActiveInvestigationId(investigationId)
@@ -68,24 +65,36 @@ function Workspace() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-zinc-950 flex font-mono text-zinc-300 text-sm">
-      {/* Left Sidebar */}
-      <Sidebar currentView={currentView} onViewChange={handleViewChange} />
+    <AnimatePresence mode="wait">
+      {showLanding ? (
+        <motion.div key="landing" exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.5, ease: 'easeInOut' }}>
+          <LandingPage onStartInvestigation={() => setShowLanding(false)} />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="workspace"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          className="h-screen w-screen overflow-hidden bg-zinc-950 flex font-mono text-zinc-300 text-sm"
+        >
+          {/* Left Sidebar */}
+          <Sidebar currentView={currentView} onViewChange={handleViewChange} />
 
-      {/* Right Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <TopHeader currentView={currentView} onViewChange={handleViewChange} />
+          {/* Right Content Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Top Header */}
+            <TopHeader currentView={currentView} onViewChange={handleViewChange} />
 
-        {/* Main Workspace - Scrollable */}
-        <main className="flex-1 overflow-y-auto p-6 bg-zinc-950">
-          {renderView()}
-        </main>
+            {/* Main Workspace - Scrollable */}
+            <main className="flex-1 overflow-y-auto p-6 bg-zinc-950">{renderView()}</main>
 
-        {/* Bottom Kernel Terminal */}
-        <KernelTerminal />
-      </div>
-    </div>
+            {/* Bottom Kernel Terminal */}
+            <KernelTerminal />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
